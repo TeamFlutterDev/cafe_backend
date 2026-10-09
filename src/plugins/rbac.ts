@@ -15,7 +15,8 @@ export type PermissionKey =
   | 'can_manage_users'
   | 'can_manage_settings'
   | 'can_void_items'
-  | 'can_manage_stock';
+  | 'can_manage_stock'
+  | 'can_manage_roles';
 
 declare module 'fastify' {
   interface FastifyInstance {

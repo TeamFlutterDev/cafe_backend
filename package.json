@@ -4,7 +4,9 @@
   "private": true,
   "description": "RasaBhojan / CafePOS — Node.js + MySQL API (docs/backend-migration/PLAN.md)",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
@@ -18,19 +20,21 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@fastify/compress": "^8.3.1",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.1",
     "@fastify/helmet": "^12.0.1",
     "@fastify/jwt": "^10.2.2",
     "@fastify/multipart": "^9.0.1",
     "@fastify/rate-limit": "^10.1.1",
+    "@fastify/static": "^10.1.4",
     "@node-rs/argon2": "^2.0.2",
     "decimal.js": "^10.4.3",
     "dotenv": "^16.4.5",
     "fastify": "^5.1.0",
     "fastify-plugin": "^5.0.1",
-    "@fastify/static": "^10.1.4",
     "mysql2": "^3.11.4",
+    "nodemailer": "^10.0.14",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
     "uuid": "^11.0.3",
@@ -38,6 +42,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.11.10",
     "autocannon": "^8.0.0",
     "mysql-memory-server": "^1.16.0",

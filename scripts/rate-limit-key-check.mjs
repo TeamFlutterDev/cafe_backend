@@ -26,7 +26,7 @@ async function makeCompanyAndAdmin(pool, label) {
 
 (async () => {
   const mysql = await import('mysql2/promise');
-  const pool = mysql.createPool({ host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', database: 'cafe' });
+  const pool = mysql.createPool({ host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', password: process.env.DB_PASSWORD ?? '', database: 'cafe' });
 
   const tokenA = await makeCompanyAndAdmin(pool, 'Tenant A');
   const tokenB = await makeCompanyAndAdmin(pool, 'Tenant B');

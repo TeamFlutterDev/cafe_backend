@@ -1,13 +1,37 @@
 import { randomInt, createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import type { PoolConnection } from 'mysql2/promise';
 import { config } from '../../config.js';
 import { newId } from '../../lib/ids.js';
 import { withTransaction } from '../../lib/tx.js';
 import { hashPassword } from '../../lib/argon.js';
 import { Errors } from '../../plugins/errors.js';
 import { sendRegistrationOtpPush } from '../push/service.js';
+import { sendOtpEmail } from '../../lib/email.js';
 import type { z } from 'zod';
 import type { CompanyInput, OwnerInput } from './schemas.js';
+
+const SYSTEM_ROLES = [
+  { role_name: 'admin',          display_name: 'Admin',          description: 'Full system access',          cvd: 1, ccb: 1, ceb: 1, ccbill: 1, cad: 1, cmi: 1, cmt: 1, cvr: 1, cmu: 1, cms: 1, cvi: 1, cmst: 1, cmr: 1 },
+  { role_name: 'manager',        display_name: 'Manager',        description: 'Manage operations & reports', cvd: 1, ccb: 1, ceb: 1, ccbill: 1, cad: 1, cmi: 1, cmt: 1, cvr: 1, cmu: 1, cms: 0, cvi: 1, cmst: 0, cmr: 0 },
+  { role_name: 'staff',          display_name: 'Staff',          description: 'Billing and table service',   cvd: 0, ccb: 1, ceb: 1, ccbill: 0, cad: 1, cmi: 0, cmt: 1, cvr: 1, cmu: 0, cms: 0, cvi: 0, cmst: 0, cmr: 0 },
+  { role_name: 'kitchen_master', display_name: 'Kitchen Master', description: 'Kitchen display & KOTs',      cvd: 0, ccb: 0, ceb: 0, ccbill: 0, cad: 0, cmi: 0, cmt: 0, cvr: 1, cmu: 0, cms: 0, cvi: 0, cmst: 0, cmr: 0 },
+] as const;
+
+async function seedSystemRoles(conn: PoolConnection, companyId: string) {
+  for (const r of SYSTEM_ROLES) {
+    await conn.execute(
+      `INSERT IGNORE INTO role_master
+         (id, company_id, role_name, display_name, description, is_system,
+          can_view_dashboard, can_create_bill, can_edit_bill, can_cancel_bill,
+          can_apply_discount, can_manage_items, can_manage_tables, can_view_reports,
+          can_manage_users, can_manage_settings, can_void_items, can_manage_stock, can_manage_roles)
+       VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [newId(), companyId, r.role_name, r.display_name, r.description,
+       r.cvd, r.ccb, r.ceb, r.ccbill, r.cad, r.cmi, r.cmt, r.cvr, r.cmu, r.cms, r.cvi, r.cmst, r.cmr],
+    );
+  }
+}
 
 /** Port of the `request_company_registration` RPC (supabase_company_registration.sql):
  * creates the company unverified/inactive plus a registration row carrying a
@@ -45,8 +69,20 @@ export async function requestCompanyRegistration(
         params.owner.owner_email ?? null, params.owner.owner_phone ?? null, otp, new Date(Date.now() + 10 * 60 * 1000),
       ],
     );
+    await seedSystemRoles(conn, companyId);
   });
 
+  // Send OTP to company email (primary) + push notification (secondary, best-effort).
+  if (params.owner.owner_email) {
+    await sendOtpEmail({
+      to: params.owner.owner_email,
+      companyName: params.company.company_name,
+      otp,
+    }).catch((err: unknown) => {
+      // Never block registration if email fails — log and continue.
+      console.error('[email] OTP send failed:', err);
+    });
+  }
   await sendRegistrationOtpPush(app, { otp, companyName: params.company.company_name });
 
   return { registration_id: registrationId, company_id: companyId };
@@ -149,8 +185,8 @@ export async function createFirstAdmin(
     await conn.execute(
       `INSERT INTO user_permission (id, user_id, can_view_dashboard, can_create_bill, can_edit_bill, can_cancel_bill,
          can_apply_discount, can_manage_items, can_manage_tables, can_view_reports, can_manage_users,
-         can_manage_settings, can_void_items, can_manage_stock)
-       VALUES (?, ?, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)`,
+         can_manage_settings, can_void_items, can_manage_stock, can_manage_roles)
+       VALUES (?, ?, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)`,
       [newId(), id],
     );
   });

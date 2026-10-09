@@ -6,6 +6,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import compress from '@fastify/compress';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { config } from './config.js';
@@ -27,6 +28,7 @@ import inventoryRoutes from './modules/inventory/routes.js';
 import registrationRoutes from './modules/registration/routes.js';
 import ownerRoutes from './modules/owner/routes.js';
 import uploadRoutes from './modules/uploads/routes.js';
+import rolesRoutes from './modules/roles/routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -69,6 +71,9 @@ export async function buildApp() {
   // Web-only refresh-token cookie (see modules/auth/routes.ts) — unsigned,
   // since the cookie value is already an unguessable random token; the cookie
   // just needs httpOnly + Secure, not a second layer of signing.
+  // gzip/brotli for JSON — the menu payload is ~1.7 KB/variant and is the
+  // heaviest thing the POS downloads on every launch/refresh.
+  await app.register(compress, { global: true, threshold: 1024, encodings: ['br', 'gzip'] });
   await app.register(cookie);
   await app.register(rateLimit, {
     global: true,
@@ -137,6 +142,7 @@ export async function buildApp() {
   await app.register(registrationRoutes, { prefix: '/v1' });
   await app.register(ownerRoutes, { prefix: '/v1' });
   await app.register(uploadRoutes, { prefix: '/v1' });
+  await app.register(rolesRoutes, { prefix: '/v1' });
 
   return app;
 }

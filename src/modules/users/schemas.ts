@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const ROLES = ['owner', 'admin', 'manager', 'cashier', 'waiter', 'kitchen'] as const;
+const ROLES = ['owner', 'admin', 'manager', 'staff', 'kitchen_master', 'cashier', 'waiter', 'kitchen'] as const;
 
 export const UserInput = z.object({
   id: z.string().uuid().optional(),
@@ -30,6 +30,7 @@ export const PermissionInput = z.object({
   can_manage_settings: z.boolean().default(false),
   can_void_items: z.boolean().default(false),
   can_manage_stock: z.boolean().default(false),
+  can_manage_roles: z.boolean().default(false),
 });
 
 export const UpsertUserBody = z.object({

@@ -42,7 +42,7 @@ const rand = () => Math.random().toString(36).slice(2, 8);
   // we have no owner account yet, read it directly through mysql2 in a tiny
   // inline query instead of the API (this script owns the whole test DB).
   const mysql = await import('mysql2/promise');
-  const dbCfg = { host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', database: 'cafe' };
+  const dbCfg = { host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', password: process.env.DB_PASSWORD ?? '', database: 'cafe' };
   const pool = mysql.createPool(dbCfg);
   const [[regRow]] = await pool.query('SELECT otp_code FROM company_registration WHERE id = ?', [reg.json.registration_id]);
   const otp = regRow.otp_code;

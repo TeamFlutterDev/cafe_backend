@@ -20,7 +20,7 @@ async function req(method, path, { body, headers = {}, cookie } = {}) {
 
 (async () => {
   const mysql = await import('mysql2/promise');
-  const pool = mysql.createPool({ host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', database: 'cafe' });
+  const pool = mysql.createPool({ host: '127.0.0.1', port: Number(process.env.DB_PORT), user: 'root', password: process.env.DB_PASSWORD ?? '', database: 'cafe' });
 
   const code = 'W' + rand().toUpperCase();
   const reg = await req('POST', '/v1/public/registrations', { body: { company: { company_code: code, company_name: 'Web Co' }, owner: {} } });
